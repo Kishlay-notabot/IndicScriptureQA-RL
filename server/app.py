@@ -11,7 +11,7 @@ from main import app  # noqa: F401 — re-export for openenv discovery
 
 def main() -> None:
     """Entry point used by `[project.scripts] server`."""
-    uvicorn.run("main:app", host="0.0.0.0", port=8000)
+    uvicorn.run("main:app", host="0.0.0.0", port=7860)
 
 
 if __name__ == "__main__":

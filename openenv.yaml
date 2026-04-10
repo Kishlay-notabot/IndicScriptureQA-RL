@@ -13,7 +13,7 @@ license: MIT
 
 env:
   module: main:app
-  port: 8000
+  port: 7860
   health_endpoint: /health
 
 action_space:
