@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "indic-scripture-qa"
+version = "1.1.0"
+description = "OpenEnv environment for evaluating LLMs on Indic scripture factual accuracy and semantic structure quality"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Kishlay Kisu", email = "kishlay.work1@gmail.com" },
+]
+keywords = ["openenv", "rl", "indic", "nlp", "benchmark", "low-resource-languages"]
+
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "requests>=2.31.0",
+]
+
+[project.urls]
+Repository = "https://huggingface.co/spaces/kishl/indicQARL"
