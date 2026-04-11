@@ -27,4 +27,4 @@ dependencies = [
 server = "server.app:main"
 
 [project.urls]
-Repository = "https://huggingface.co/spaces/kishl/indicQARL"
+Repository = "https://huggingface.co/spaces/Beens/IndicQARL"
