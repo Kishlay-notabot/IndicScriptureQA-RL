@@ -1,14 +1,3 @@
-"""
-Reward computation for IndicScriptureQA — LLM-as-a-Judge.
-Uses an LLM (via OpenAI client) to evaluate both factual accuracy and
-semantic structure quality. Falls back to lightweight token heuristics
-if the LLM call fails.
-Environment variables (shared with inference.py):
-  API_BASE_URL   LLM endpoint
-  MODEL_NAME     Model identifier
-  HF_TOKEN       API key
-"""
-
 from __future__ import annotations
 
 import json
@@ -21,11 +10,9 @@ from openai import OpenAI
 from models import ActionType, EnvState, StructuralMeta
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# LLM CLIENT
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# LLM Client 
 _client: Optional[OpenAI] = None
+
 
 def _get_client() -> OpenAI:
     global _client
@@ -46,12 +33,12 @@ def _get_client() -> OpenAI:
 
     return _client
 
+
 def _get_model() -> str:
     return os.environ.get("MODEL_NAME", "gpt-4o-mini")
 
 
 def _llm_judge(system: str, user_prompt: str) -> Optional[dict]:
-    """Call the LLM and parse a JSON response. Returns None on any failure."""
     try:
         client = _get_client()
         resp = client.chat.completions.create(
@@ -61,7 +48,7 @@ def _llm_judge(system: str, user_prompt: str) -> Optional[dict]:
                 {"role": "user", "content": user_prompt},
             ],
             temperature=0.1,
-            max_tokens=500,
+            max_tokens=764,
         )
         raw = (resp.choices[0].message.content or "").strip()
         if raw.startswith("```"):
@@ -72,10 +59,7 @@ def _llm_judge(system: str, user_prompt: str) -> Optional[dict]:
         return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# JUDGE PROMPTS
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# Judge Prompts 
 JUDGE_SYSTEM = (
     "You are an expert judge evaluating answers about Indic scriptures "
     "(Vedas, Upanishads, Ramayana, Mahabharata, Bhagavad Gita, Puranas). "
@@ -162,9 +146,7 @@ def _step_delta_prompt(
     }, indent=2)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# FALLBACK HEURISTICS (used when LLM is unavailable)
-# ═══════════════════════════════════════════════════════════════════════════════
+# When LLM is not available 
 
 def _tokenize(text: str) -> List[str]:
     return [t for t in re.split(r"[^a-zA-Z0-9\u0900-\u097F]+", text.lower()) if t]
@@ -192,16 +174,12 @@ def _citation_recall_heuristic(predicted: List[str], ground_truth: List[str]) ->
     return matched / len(gt)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PER-STEP REWARD
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# Rewards - per step 
 def step_reward(
     state: EnvState, action_type: ActionType, payload: str | None,
 ) -> Tuple[float, str]:
-    """Compute per-step reward and feedback. Uses LLM judge for EDIT/RESTRUCTURE."""
 
-    # ── RETRIEVE ──────────────────────────────────────────────────────────
+    # RETRIEVE 
     if action_type == ActionType.RETRIEVE:
         if state.retrieval_count >= 3:
             return -0.15, "Redundant retrieval — already retrieved 3 times."
@@ -210,7 +188,7 @@ def step_reward(
         else:
             return -0.05, "No passages available for retrieval."
 
-    # ── CITE ──────────────────────────────────────────────────────────────
+    # CITE 
     if action_type == ActionType.CITE:
         if not payload:
             return -0.05, "Empty citation."
@@ -219,11 +197,11 @@ def step_reward(
             return 0.15, "Correct citation added."
         return -0.05, "Citation does not match expected sources."
 
-    # ── ACCEPT / REJECT ──────────────────────────────────────────────────
+    # ACCEPT / REJECT 
     if action_type in (ActionType.ACCEPT, ActionType.REJECT):
         return 0.0, ""
 
-    # ── EDIT / RESTRUCTURE — LLM judge ───────────────────────────────────
+    # EDIT / RESTRUCTURE 
     if not payload:
         return -0.10, f"Empty {action_type.value.lower()} — no content provided."
 
@@ -257,7 +235,7 @@ def step_reward(
             else:
                 return -0.05, f"Restructure had negligible effect. {fb}"
 
-    # ── Fallback: token-F1 delta ──────────────────────────────────────────
+    # fallback for f1-token delta 
     old_sim = _token_f1(old_answer, state.ground_truth_answer)
     new_sim = _token_f1(payload, state.ground_truth_answer)
     delta = new_sim - old_sim
@@ -270,16 +248,12 @@ def step_reward(
     return -0.05, f"{label} negligible effect (fallback scoring)."
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TERMINAL REWARD
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# Terminal Rewards 
 def terminal_reward(
     state: EnvState, action_type: ActionType,
 ) -> Tuple[float, str]:
-    """Terminal reward using LLM-as-a-judge, with heuristic fallback."""
 
-    # ── REJECT ────────────────────────────────────────────────────────────
+    # REJECT 
     if action_type == ActionType.REJECT:
         result = _llm_judge(JUDGE_SYSTEM, _terminal_reject_prompt(state))
         if result is not None:
@@ -293,7 +267,7 @@ def terminal_reward(
             return 0.30, "Correctly rejected a flawed answer (fallback)."
         return -0.50, "Incorrectly rejected a valid answer (fallback)."
 
-    # ── ACCEPT — LLM judge ────────────────────────────────────────────────
+    # ACCEPT 
     result = _llm_judge(JUDGE_SYSTEM, _terminal_accept_prompt(state))
 
     if result is not None:
@@ -330,7 +304,8 @@ def terminal_reward(
         )
         return terminal, feedback
 
-    # ── Fallback: heuristic scoring ───────────────────────────────────────
+    
+    # heuristic scoring - fallback 
     fs = _token_f1(state.current_answer, state.ground_truth_answer)
     cs = _citation_recall_heuristic(
         state.current_citations, state.ground_truth_citations,
@@ -349,13 +324,8 @@ def terminal_reward(
     return terminal, f"Accepted a {quality} answer (fact={fs:.2f}, cite={cs:.2f}, fallback)."
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# SCORE NORMALISATION
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# normalizing reward score 
 MAX_REASONABLE_REWARD = 2.80
 
-
 def normalize_score(cumulative_reward: float) -> float:
-    """Clamp cumulative reward into [0, 1]."""
     return max(0.0, min(1.0, cumulative_reward / MAX_REASONABLE_REWARD))
