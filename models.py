@@ -1,5 +1,3 @@
-"""Typed Pydantic models for the IndicScriptureQA environment."""
-
 from __future__ import annotations
 
 from enum import Enum
@@ -8,8 +6,8 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
-# ── Action Space ──────────────────────────────────────────────────────────────
 
+# Action Space 
 class ActionType(str, Enum):
     RETRIEVE     = "RETRIEVE"      # Retrieve source passages (payload = optional query)
     EDIT         = "EDIT"          # Replace current answer   (payload = new answer text)
@@ -24,10 +22,9 @@ class Action(BaseModel):
     payload: Optional[str] = None
 
 
-# ── Structural metadata (hidden from agent, used by grader) ──────────────────
 
+# Structural metadata (hidden from agent, used by grader)
 class StructuralMeta(BaseModel):
-    """Describes the *expected* semantic structure of a correct answer."""
     required_terms: List[str] = Field(
         default_factory=list,
         description="Sanskrit / domain terms the answer must contain.",
@@ -46,8 +43,7 @@ class StructuralMeta(BaseModel):
     )
 
 
-# ── Observation Space ─────────────────────────────────────────────────────────
-
+# Observation Space
 class Observation(BaseModel):
     question: str
     current_answer: str
@@ -56,15 +52,15 @@ class Observation(BaseModel):
     steps_remaining: int
     task_name: str
     feedback: Optional[str] = None
-    # structural hints exposed to the agent (non-spoiler)
+    # structural hints exposed to the agent 
     structural_hints: List[str] = Field(
         default_factory=list,
         description="High-level hints about expected answer structure.",
     )
 
 
-# ── Step Result ───────────────────────────────────────────────────────────────
 
+# Step Result 
 class StepResult(BaseModel):
     observation: Observation
     reward: float = 0.0
@@ -72,8 +68,8 @@ class StepResult(BaseModel):
     info: dict = Field(default_factory=dict)
 
 
-# ── Internal State (superset of observation + grading internals) ──────────────
 
+# Internal State (superset of observation + grading internals) 
 class EnvState(BaseModel):
     # observable
     question: str
@@ -85,7 +81,7 @@ class EnvState(BaseModel):
     feedback: Optional[str] = None
     structural_hints: List[str] = Field(default_factory=list)
 
-    # hidden / grading — factual
+    # hidden / grading - factual
     original_answer: str = ""
     ground_truth_answer: str = ""
     ground_truth_citations: List[str] = Field(default_factory=list)
@@ -93,7 +89,7 @@ class EnvState(BaseModel):
     answer_is_correct: bool = False        # overall: facts AND structure both OK
     factual_is_correct: bool = False       # facts alone are OK (structure may be bad)
 
-    # hidden / grading — structural
+    # hidden / grading - structural
     structural_meta: StructuralMeta = Field(default_factory=StructuralMeta)
 
     # episode bookkeeping
