@@ -1,17 +1,15 @@
 """
-Task definitions for IndicScriptureQA.
-
-Each scenario now carries *structural metadata* alongside factual ground truth.
+our task design contains the following, 
+Each scenario now carries *structural metadata alongside factual ground truth.
 The grader evaluates BOTH factual accuracy AND semantic structure:
-  - required_terms     → Sanskrit/domain terms the answer must use
-  - required_sections  → conceptual aspects that must be covered
-  - expected_order     → logical ordering of concepts
-  - banned_terms       → misconception markers (penalty if present)
-
+  - required_terms     ->  Sanskrit/domain terms the answer must use
+  - required_sections  -> conceptual aspects that must be covered
+  - expected_order     -> logical ordering of concepts
+  - banned_terms       -> misconception markers (penalty if present)
 Difficulty controls:
-  easy   → blatant factual error OR correct answer; max 5 steps
-  medium → partial errors + missing citations + poor structure; max 8 steps
-  hard   → subtle hallucinations + jumbled structure + terminology misuse; max 12 steps
+  easy   -> blatant factual error OR correct answer; max 5 steps
+  medium -> partial errors + missing citations + poor structure; max 8 steps
+  hard   -> subtle hallucinations + jumbled structure + terminology misuse; max 12 steps
 """
 
 from __future__ import annotations
@@ -35,10 +33,7 @@ class Scenario:
     structural_hints: List[str]        # non-spoiler hints shown to agent
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TASK 1 — verify-factual  (Easy)
-# ═══════════════════════════════════════════════════════════════════════════════
-
+# TASK 1 - Verify factual (easy)
 VERIFY_FACTUAL_SCENARIOS: List[Scenario] = [
     Scenario(
         question="Who killed Ravana in the Ramayana?",
@@ -136,11 +131,7 @@ VERIFY_FACTUAL_SCENARIOS: List[Scenario] = [
 ]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TASK 2 — correct-and-cite  (Medium)
-#   Scenarios now include structural problems: missing aspects, wrong ordering,
-#   imprecise terminology, alongside the citation/factual issues.
-# ═══════════════════════════════════════════════════════════════════════════════
+# TASK 2 - Correct and cite (Medium) 
 
 CORRECT_AND_CITE_SCENARIOS: List[Scenario] = [
     Scenario(
@@ -262,11 +253,7 @@ CORRECT_AND_CITE_SCENARIOS: List[Scenario] = [
 ]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TASK 3 — fix-hallucination  (Hard)
-#   Includes subtle factual errors PLUS structural/terminological problems:
-#   wrong ordering of concepts, misused Sanskrit terms, incomplete coverage.
-# ═══════════════════════════════════════════════════════════════════════════════
+# TASK 3 - Fix Hallucination (Hard)
 
 FIX_HALLUCINATION_SCENARIOS: List[Scenario] = [
     Scenario(
@@ -414,9 +401,8 @@ FIX_HALLUCINATION_SCENARIOS: List[Scenario] = [
 ]
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# Task registry
-# ═══════════════════════════════════════════════════════════════════════════════
+
+# Task Registry
 
 @dataclasses.dataclass
 class TaskConfig:
