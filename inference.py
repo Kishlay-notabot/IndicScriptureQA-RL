@@ -1,20 +1,3 @@
-"""
-Baseline inference script for IndicScriptureQA.
-
-Runs an LLM agent against all 3 tasks via the OpenEnv HTTP API.
-Emits structured [START]/[STEP]/[END] logs per the OpenEnv spec.
-
-The agent evaluates BOTH factual accuracy AND semantic structure:
-  - factual: hallucination detection, correction
-  - structural: coherence, completeness, terminology, logical ordering
-
-Environment variables:
-  API_BASE_URL   LLM endpoint         (default: HF router)
-  MODEL_NAME     Model identifier      (default: Qwen2.5-72B-Instruct)
-  HF_TOKEN       API key
-  PING_URL       Environment server    (default: http://localhost:8000)
-"""
-
 import json
 import os
 import textwrap
@@ -25,10 +8,10 @@ from openai import OpenAI
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-ENV_URL = os.getenv("PING_URL", "http://localhost:8000")
+API_KEY = os.environ["API_KEY"]
+API_BASE_URL = os.environ["API_BASE_URL"]
+MODEL_NAME = os.environ["MODEL_NAME"]
+ENV_URL = os.environ.get("PING_URL", "http://localhost:8000")
 BENCHMARK = "indic_scripture_qa"
 TEMPERATURE = 0.4
 MAX_TOKENS = 600
@@ -43,17 +26,14 @@ SYSTEM_PROMPT = textwrap.dedent("""\
 You are an expert agent that both CORRECTS hallucinations and IMPROVES the
 semantic structure of answers about Indic scriptures (Vedas, Upanishads,
 Ramayana, Mahabharata, Bhagavad Gita, Puranas).
-
 Each turn you receive an observation with:
   - question, current_answer, retrieved_passages, current_citations,
     steps_remaining, feedback, structural_hints
-
 You must reply with EXACTLY ONE JSON object (no markdown, no explanation):
 {
   "action_type": "RETRIEVE" | "EDIT" | "RESTRUCTURE" | "CITE" | "ACCEPT" | "REJECT",
   "payload": "<string or null>"
 }
-
 Actions:
   RETRIEVE    — fetch source passages to verify facts
   EDIT        — rewrite the answer to fix factual errors AND improve content
@@ -62,7 +42,6 @@ Actions:
   CITE        — add a scripture citation (e.g. "Bhagavad Gita 2.47")
   ACCEPT      — finalise when answer is both accurate and well-structured
   REJECT      — only if the answer is fundamentally unsalvageable
-
 Strategy:
   1. RETRIEVE first (1–2 times) to get authoritative source passages.
   2. Check facts against retrieved passages. EDIT to fix any errors.
@@ -72,7 +51,6 @@ Strategy:
   5. ACCEPT when the answer is factually accurate, well-structured, uses
      correct Sanskrit terminology, and covers all required aspects.
   6. Be efficient — fewer steps score higher.
-
 Evaluation axes (the grader checks ALL of these):
   - Factual similarity to ground truth
   - Citation accuracy
