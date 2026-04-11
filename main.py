@@ -1,6 +1,5 @@
 """
 FastAPI server for IndicScriptureQA — OpenEnv compatible.
-
 Endpoints:
   POST /reset   — start a new episode
   POST /step    — take an action
@@ -107,3 +106,11 @@ def list_tasks():
         ).model_dump()
         for cfg in TASKS.values()
     ]
+
+@app.get("/")
+def root():
+    return {
+        "status": "running",
+        "service": "IndicScriptureQA OpenEnv",
+        "endpoints": ["/reset", "/step", "/state", "/health", "/tasks"]
+    }
