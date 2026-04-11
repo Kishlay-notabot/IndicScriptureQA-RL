@@ -1,12 +1,3 @@
-"""
-Core environment logic for IndicScriptureQA.
-
-Implements the OpenEnv interface:
-  reset(task_name, scenario_index) → StepResult
-  step(action)                     → StepResult
-  state()                          → EnvState
-"""
-
 from __future__ import annotations
 
 import random
@@ -18,12 +9,9 @@ from tasks import TASKS, Scenario, TaskConfig
 
 
 class IndicScriptureQAEnv:
-    """Stateful environment — one instance per episode."""
 
     def __init__(self) -> None:
         self._state: Optional[EnvState] = None
-
-    # ── reset ─────────────────────────────────────────────────────────────
 
     def reset(
         self,
@@ -66,7 +54,6 @@ class IndicScriptureQAEnv:
         )
         return StepResult(observation=self._state.to_observation(), reward=0.0, done=False)
 
-    # ── step ──────────────────────────────────────────────────────────────
 
     def step(self, action: Action) -> StepResult:
         s = self._state
@@ -84,7 +71,7 @@ class IndicScriptureQAEnv:
         feedback = ""
         done = False
 
-        # ── action dispatch ───────────────────────────────────────────────
+        # action dispatch
         if act == ActionType.RETRIEVE:
             s.retrieval_count += 1
             if s.available_passages:
@@ -125,14 +112,14 @@ class IndicScriptureQAEnv:
             reward = -0.10
             feedback = f"Unknown action type: {act}"
 
-        # ── check step limit ──────────────────────────────────────────────
+        # check steps
         if not done and s.steps_remaining <= 0:
             t_reward, t_fb = terminal_reward(s, ActionType.ACCEPT)
             reward += t_reward - 0.20
             feedback += f" | Forced termination (step limit). {t_fb}"
             done = True
 
-        # ── bookkeeping ──────────────────────────────────────────────────
+        # book-keep the logs 
         s.rewards.append(reward)
         s.cumulative_reward += reward
         s.done = done
@@ -150,8 +137,7 @@ class IndicScriptureQAEnv:
             info=info,
         )
 
-    # ── state ─────────────────────────────────────────────────────────────
-
+    # update state
     def state(self) -> EnvState:
         if self._state is None:
             raise RuntimeError("Call reset() first.")
