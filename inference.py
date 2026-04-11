@@ -6,12 +6,16 @@ from typing import Dict, List, Optional
 import requests
 from openai import OpenAI
 
-# ── Config ────────────────────────────────────────────────────────────────────
 
-API_KEY = os.getenv("API_KEY") or os.getenv("HF_TOKEN")
-API_BASE_URL = os.getenv("API_BASE_URL")
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
-ENV_URL = os.environ.get("PING_URL", "http://localhost:8000")
+# Config  --- 
+
+# API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+# API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
+# MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+API_KEY = os.environ["API_KEY"]          
+API_BASE_URL = os.environ["API_BASE_URL"] 
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o-mini")
+ENV_URL = os.environ.get("PING_URL", "http://localhost:7860")
 BENCHMARK = "indic_scripture_qa"
 TEMPERATURE = 0.4
 MAX_TOKENS = 600
@@ -21,6 +25,8 @@ TASKS = [
     {"name": "correct-and-cite",  "max_steps": 8},
     {"name": "fix-hallucination", "max_steps": 12},
 ]
+
+
 
 SYSTEM_PROMPT = textwrap.dedent("""\
 You are an expert agent that both CORRECTS hallucinations and IMPROVES the
@@ -61,7 +67,7 @@ Evaluation axes (the grader checks ALL of these):
 """)
 
 
-# ── Logging helpers ───────────────────────────────────────────────────────────
+# ── Logging helpers 
 
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
@@ -84,7 +90,7 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     )
 
 
-# ── Env HTTP helpers ──────────────────────────────────────────────────────────
+# ── Env HTTP helpers 
 
 def env_reset(task_name: str, scenario_index: int = 0) -> Dict:
     resp = requests.post(
@@ -106,7 +112,8 @@ def env_step(action_type: str, payload: Optional[str] = None) -> Dict:
     return resp.json()
 
 
-# ── Agent ─────────────────────────────────────────────────────────────────────
+
+# ── Agent 
 
 def build_user_prompt(obs: Dict, step: int) -> str:
     return json.dumps({
@@ -146,10 +153,9 @@ def get_agent_action(client: OpenAI, obs: Dict, step: int) -> Dict:
         return {"action_type": "ACCEPT", "payload": None}
 
 
-# ── Main loop ─────────────────────────────────────────────────────────────────
+# ── Main loop 
 
 def run_task(client: OpenAI, task_name: str, max_steps: int, scenario_index: int = 0) -> float:
-    """Run one episode. Returns score in [0, 1]."""
     log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
     rewards: List[float] = []
@@ -193,6 +199,7 @@ def run_task(client: OpenAI, task_name: str, max_steps: int, scenario_index: int
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
     return score
+
 
 
 def main() -> None:
