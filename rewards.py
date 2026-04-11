@@ -1,10 +1,8 @@
 """
 Reward computation for IndicScriptureQA — LLM-as-a-Judge.
-
 Uses an LLM (via OpenAI client) to evaluate both factual accuracy and
 semantic structure quality. Falls back to lightweight token heuristics
 if the LLM call fails.
-
 Environment variables (shared with inference.py):
   API_BASE_URL   LLM endpoint
   MODEL_NAME     Model identifier
@@ -34,14 +32,23 @@ def _get_client() -> OpenAI:
     global _client
     if _client is None:
         _client = OpenAI(
-            base_url=os.getenv("API_BASE_URL", "https://router.huggingface.co/v1"),
-            api_key=os.getenv("HF_TOKEN") or os.getenv("API_KEY", ""),
+            base_url=os.environ["API_BASE_URL"],   
+            api_key=os.environ["API_KEY"],         
         )
+        try:
+                _client.chat.completions.create(
+                    model=_get_model(),
+                    messages=[{"role": "user", "content": "ping"}],
+                    max_tokens=1,
+                )
+        except Exception as e:
+                print(f"[WARN] Warmup failed: {e}", flush=True)
+
     return _client
 
 
 def _get_model() -> str:
-    return os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+    return os.environ.get("MODEL_NAME", "gpt-4o-mini")
 
 
 def _llm_judge(system: str, user_prompt: str) -> Optional[dict]:
