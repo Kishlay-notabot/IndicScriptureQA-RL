@@ -32,18 +32,9 @@ def _get_client() -> OpenAI:
     global _client
     if _client is None:
         _client = OpenAI(
-            base_url=os.environ["API_BASE_URL"],   
-            api_key=os.environ["API_KEY"],         
+            base_url=os.environ.get("API_BASE_URL", "https://router.huggingface.co/v1"),
+            api_key=os.environ.get("API_KEY") or os.environ.get("HF_TOKEN", ""),
         )
-        try:
-                _client.chat.completions.create(
-                    model=_get_model(),
-                    messages=[{"role": "user", "content": "ping"}],
-                    max_tokens=1,
-                )
-        except Exception as e:
-                print(f"[WARN] Warmup failed: {e}", flush=True)
-
     return _client
 
 
