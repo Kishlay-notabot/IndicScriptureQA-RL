@@ -1,5 +1,5 @@
 """
-FastAPI server for IndicScriptureQA — OpenEnv compatible.
+we've made the following endpoints: 
 Endpoints:
   POST /reset   — start a new episode
   POST /step    — take an action
@@ -31,7 +31,8 @@ app = FastAPI(
 _env = IndicScriptureQAEnv()
 
 
-# ── Request / Response schemas ────────────────────────────────────────────────
+
+# ── Request / Response schemas 
 
 class ResetRequest(BaseModel):
     task_name: str = "verify-factual"
@@ -50,7 +51,8 @@ class TaskInfo(BaseModel):
     num_scenarios: int
 
 
-# ── Endpoints ─────────────────────────────────────────────────────────────────
+
+# ── Endpoints
 
 @app.post("/reset")
 def reset(body: ResetRequest = ResetRequest()):
@@ -106,6 +108,9 @@ def list_tasks():
         ).model_dump()
         for cfg in TASKS.values()
     ]
+
+
+# root - this get reflected in the HF Space (since we don't have a gradio interface)
 
 @app.get("/")
 def root():
